@@ -28,6 +28,8 @@ from heapq import heappop, heappush, heapify
 from multiprocessing import Pool
 from typing import Callable, Dict, Generic, List, Optional, TypeVar
 
+import requests
+
 # from queue import PriorityQueue
 
 
@@ -198,3 +200,6 @@ def get_node_path_results(result, silent=False):
             print(n)
 
     return len(flatten_nodes)
+
+
+
