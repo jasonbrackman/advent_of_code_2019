@@ -28,10 +28,6 @@ from heapq import heappop, heappush, heapify
 from multiprocessing import Pool
 from typing import Callable, Dict, Generic, List, Optional, TypeVar
 
-import requests
-
-# from queue import PriorityQueue
-
 
 T = TypeVar("T")
 
@@ -51,7 +47,7 @@ def time_it(command):
     t1 = time.perf_counter()
     command()
     print(
-        f"[{str(command.__module__)}.{command.__name__}: Completed in {time.perf_counter() - t1:0.8f} seconds"
+        f"[{str(command.__module__)}.{command.__name__}]: Completed in {time.perf_counter() - t1:0.8f} seconds"
     )
 
 
@@ -200,6 +196,5 @@ def get_node_path_results(result, silent=False):
             print(n)
 
     return len(flatten_nodes)
-
 
 
