@@ -21,13 +21,13 @@
 #  SOFTWARE.
 
 from __future__ import annotations
+
 import json
 import time
 from collections import deque
-from heapq import heappop, heappush, heapify
+from heapq import heappop, heappush
 from multiprocessing import Pool
 from typing import Callable, Dict, Generic, List, Optional, TypeVar
-
 
 T = TypeVar("T")
 

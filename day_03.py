@@ -1,0 +1,89 @@
+import time
+
+import helpers
+
+
+def parse_input():
+    results = helpers.get_lines(r"./data/day_03.txt")
+    wire01 = results[0].split(",")
+    wire02 = results[1].split(",")
+    return [wire01, wire02]
+
+
+def add_positions(pos1, pos2):
+    row = pos1[0] + pos2[0]
+    col = pos1[1] + pos2[1]
+    return row, col
+
+
+def create_path(wire):
+    dirs = {"R": (0, 1), "L": (0, -1), "U": (-1, 0), "D": (1, 0)}
+
+    current = (0, 0)
+
+    visited = [current]
+
+    for cmd in wire:
+        d, n = cmd[0], int(cmd[1:])
+        for _ in range(0, n):
+            current = add_positions(current, dirs[d])
+            visited.append(current)
+    return visited
+
+
+def manhattan_distance(pos1, pos2):
+    x1, y1 = pos1
+    x2, y2 = pos2
+    x_dist: int = abs(x1 - x2)
+    y_dist: int = abs(y1 - y2)
+
+    return x_dist + y_dist
+
+
+def get_shortest_distances(wires):
+    paths = [create_path(wire) for wire in wires]
+    cross = set(paths[0]).intersection(set(paths[1]))
+
+    footsteps = [paths[0].index(c) + paths[1].index(c) for c in cross]
+    manhattan = [manhattan_distance((0, 0), c) for c in cross]
+
+    return sorted(manhattan)[1], sorted(footsteps)[1]
+
+
+def tests():
+    test01 = "R8,U5,L5,D3".split(",")
+    test02 = "U7,R6,D4,L4".split(",")
+    wires = [test01, test02]
+    t1, t2 = get_shortest_distances(wires)
+    assert t1 == 6
+    assert t2 == 30
+
+    test01 = "R75,D30,R83,U83,L12,D49,R71,U7,L72".split(",")
+    test02 = "U62,R66,U55,R34,D71,R55,D58,R83".split(",")
+    wires = [test01, test02]
+    t1, t2 = get_shortest_distances(wires)
+    assert t1 == 159
+    assert t2 == 610
+
+    test01 = "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51".split(",")
+    test02 = "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7".split(",")
+    wires = [test01, test02]
+    t1, t2 = get_shortest_distances(wires)
+    assert t1 == 135
+    assert t2 == 410
+
+
+def run():
+    wires = parse_input()
+    part01, part02 = get_shortest_distances(wires)
+    assert part01 == 316
+    assert part02 == 16368
+
+
+if __name__ == "__main__":
+    t1 = time.perf_counter()
+
+    tests()
+    run()
+
+    print(f"[Completed in {time.perf_counter() - t1:0.8f} seconds")
