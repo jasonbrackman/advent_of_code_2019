@@ -86,7 +86,9 @@ def draw_crossed_wires():
             ys.append(i[1])
     min_x = abs(min(xs))
     min_y = abs(min(ys))
+
     image = display.Image(max(xs)+min_x, max(ys)+min_y)
+
     green = paths[0]
     blue = paths[1]
     purple = set(paths[0]).intersection(set(paths[1]))
@@ -105,7 +107,7 @@ def draw_crossed_wires():
 if __name__ == "__main__":
     t1 = time.perf_counter()
 
-    # draw_crossed_wires()
+    draw_crossed_wires()
     tests()
     run()
 

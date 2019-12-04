@@ -27,8 +27,8 @@ class Image:
 
         self.rows = rows * self.multiplier
         self.cols = cols * self.multiplier
-        print(self.rows, self.cols)
-        # Default background is black
+        print(f"Image Size: {self.rows}, {self.cols}")
+        # Default background is near black
         self.pixels = [["20 20 20\n"] * self.cols for _ in range(self.rows)]
 
     def pixel(self, row, col, colour):
