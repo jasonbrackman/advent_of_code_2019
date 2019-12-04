@@ -42,7 +42,7 @@ class Image:
         if r < self.rows and c < self.cols:
             for incr in range(self.multiplier):
                 for incc in range(self.multiplier):
-                    self.pixels[r+incr][c+incc] = self.COLOURS[colour]
+                    self.pixels[r + incr][c + incc] = self.COLOURS[colour]
 
     def paint(self, file_path: str):
         ascii_colours = "P3"

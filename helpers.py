@@ -93,7 +93,11 @@ class Node:
 
 class Node2(Generic[T]):
     def __init__(
-        self, state: T, parent: Optional[Node2], cost: float = 0.0, heuristic: float = 0.0
+        self,
+        state: T,
+        parent: Optional[Node2],
+        cost: float = 0.0,
+        heuristic: float = 0.0,
     ):
         self.state = state
         self.parent = parent
@@ -101,7 +105,9 @@ class Node2(Generic[T]):
         self.heuristic = heuristic
 
     def __repr__(self):
-        return f"Node2({self.state!r}, {self.parent!r}, {self.cost=}, {self.heuristic=})"
+        return (
+            f"Node2({self.state!r}, {self.parent!r}, {self.cost=}, {self.heuristic=})"
+        )
 
     def __lt__(self, other: Node) -> bool:
         return (self.cost + self.heuristic) < (other.cost + other.heuristic)
@@ -196,5 +202,3 @@ def get_node_path_results(result, silent=False):
             print(n)
 
     return len(flatten_nodes)
-
-

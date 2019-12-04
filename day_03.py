@@ -39,10 +39,17 @@ def get_shortest_distances(wires):
     paths = [create_path(wire) for wire in wires]
     cross = set(paths[0]).intersection(set(paths[1]))
 
-    footsteps = [paths[0].index(c) + paths[1].index(c) for c in cross]
-    manhattan = [manhattan_distance(c) for c in cross]
+    # Remove the starting position
+    cross.remove((0, 0))
 
-    return sorted(manhattan)[1], sorted(footsteps)[1]
+    # Creating a lookup table as an index search cost is paid each iteration
+    lpath1 = {k: v for v, k in enumerate(paths[0])}
+    lpath2 = {k: v for v, k in enumerate(paths[1])}
+
+    footsteps = (lpath1[c] + lpath2[c] for c in cross)
+    manhattan = (manhattan_distance(c) for c in cross)
+
+    return min(manhattan), min(footsteps)
 
 
 def tests():
@@ -87,28 +94,29 @@ def draw_crossed_wires():
     min_x = abs(min(xs))
     min_y = abs(min(ys))
 
-    image = display.Image(max(xs)+min_x, max(ys)+min_y)
+    image = display.Image(max(xs) + min_x, max(ys) + min_y)
 
     green = paths[0]
     blue = paths[1]
     purple = set(paths[0]).intersection(set(paths[1]))
 
     for g in green:
-        image.pixel(g[0]+min_x, g[1]+min_y, 'green')
+        image.pixel(g[0] + min_x, g[1] + min_y, "green")
     for b in blue:
-        image.pixel(b[0]+min_x, b[1]+min_y, 'blue')
+        image.pixel(b[0] + min_x, b[1] + min_y, "blue")
     for p in purple:
         for incx in range(-5, 6):
             for incy in range(-5, 6):
-                image.pixel(p[0]+min_x+incx, p[1]+min_y+incy, 'white')
+                image.pixel(p[0] + min_x + incx, p[1] + min_y + incy, "white")
 
-    image.paint(r'./display/day_03.ppm')
+    image.paint(r"./display/day_03.ppm")
+
 
 if __name__ == "__main__":
-    t1 = time.perf_counter()
+    # t1 = time.perf_counter()
 
-    draw_crossed_wires()
+    # draw_crossed_wires()
     tests()
     run()
 
-    print(f"[Completed in {time.perf_counter() - t1:0.8f} seconds")
+    # print(f"[Completed in {time.perf_counter() - t1:0.8f} seconds")
