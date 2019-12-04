@@ -13,20 +13,23 @@ import random
 
 class Image:
 
-    multiplier = 2
+    multiplier = 1
 
     def __init__(self, rows, cols):
         self.COLOURS = {
             "white": "255 255 255\n",
             "black": "0 0 0\n",
+            "green": "0 255 0\n",
+            "blue": "0 0 255\n",
+            "purple": "128 0 128\n",
             "random": f"{random.randint(0, 255)} {random.randint(0, 255)} {random.randint(0, 255)}\n",
         }
 
-        self.rows = rows
-        self.cols = cols
-
+        self.rows = rows * self.multiplier
+        self.cols = cols * self.multiplier
+        print(self.rows, self.cols)
         # Default background is black
-        self.pixels = [["0 0 0\n"] * self.cols for _ in range(self.rows)]
+        self.pixels = [["20 20 20\n"] * self.cols for _ in range(self.rows)]
 
     def pixel(self, row, col, colour):
         if colour not in self.COLOURS:
@@ -34,10 +37,12 @@ class Image:
                 f"Expected one of the following colours: {self.COLOURS.keys()}"
             )
         # print(row, col, colour)
-        r = row
-        c = col
+        r = row * self.multiplier
+        c = col * self.multiplier
         if r < self.rows and c < self.cols:
-            self.pixels[r][c] = self.COLOURS[colour]
+            for incr in range(self.multiplier):
+                for incc in range(self.multiplier):
+                    self.pixels[r+incr][c+incc] = self.COLOURS[colour]
 
     def paint(self, file_path: str):
         ascii_colours = "P3"
@@ -74,4 +79,4 @@ if __name__ == "__main__":
                 elif test_data[r][c].isdigit():
                     colour = "random"
                 canvas.pixel(r, c, colour)
-        canvas.paint(f"./data/test_{index:02}.ppm")
+        canvas.paint(f"./display/test_{index:02}.ppm")

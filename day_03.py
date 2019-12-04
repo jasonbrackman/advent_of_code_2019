@@ -1,5 +1,5 @@
 import time
-
+import display
 import helpers
 
 
@@ -31,13 +31,8 @@ def create_path(wire):
     return visited
 
 
-def manhattan_distance(pos1, pos2):
-    x1, y1 = pos1
-    x2, y2 = pos2
-    x_dist: int = abs(x1 - x2)
-    y_dist: int = abs(y1 - y2)
-
-    return x_dist + y_dist
+def manhattan_distance(pos2):
+    return abs(pos2[0]) + abs(pos2[1])
 
 
 def get_shortest_distances(wires):
@@ -45,7 +40,7 @@ def get_shortest_distances(wires):
     cross = set(paths[0]).intersection(set(paths[1]))
 
     footsteps = [paths[0].index(c) + paths[1].index(c) for c in cross]
-    manhattan = [manhattan_distance((0, 0), c) for c in cross]
+    manhattan = [manhattan_distance(c) for c in cross]
 
     return sorted(manhattan)[1], sorted(footsteps)[1]
 
@@ -80,9 +75,37 @@ def run():
     assert part02 == 16368
 
 
+def draw_crossed_wires():
+    wires = parse_input()
+    paths = [create_path(wire) for wire in wires]
+    xs = []
+    ys = []
+    for path in paths:
+        for i in path:
+            xs.append(i[0])
+            ys.append(i[1])
+    min_x = abs(min(xs))
+    min_y = abs(min(ys))
+    image = display.Image(max(xs)+min_x, max(ys)+min_y)
+    green = paths[0]
+    blue = paths[1]
+    purple = set(paths[0]).intersection(set(paths[1]))
+
+    for g in green:
+        image.pixel(g[0]+min_x, g[1]+min_y, 'green')
+    for b in blue:
+        image.pixel(b[0]+min_x, b[1]+min_y, 'blue')
+    for p in purple:
+        for incx in range(-5, 6):
+            for incy in range(-5, 6):
+                image.pixel(p[0]+min_x+incx, p[1]+min_y+incy, 'white')
+
+    image.paint(r'./display/day_03.ppm')
+
 if __name__ == "__main__":
     t1 = time.perf_counter()
 
+    # draw_crossed_wires()
     tests()
     run()
 
