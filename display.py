@@ -57,7 +57,7 @@ class Image:
                 handle.writelines(lines)
 
 
-if __name__ == "__main__":
+def example():
     test_data = [
         "###########",
         "#0.1.....2#",
@@ -65,10 +65,8 @@ if __name__ == "__main__":
         "#4.......3#",
         "###########",
     ]
-
     rows = len(test_data)
     cols = len(test_data[0])
-
     for index in range(3):
         canvas = Image(rows, cols)
         for r in range(rows):
@@ -80,3 +78,7 @@ if __name__ == "__main__":
                     colour = "random"
                 canvas.pixel(r, c, colour)
         canvas.paint(f"./display/test_{index:02}.ppm")
+
+
+if __name__ == "__main__":
+    example()

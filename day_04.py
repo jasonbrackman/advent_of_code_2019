@@ -6,7 +6,7 @@ Two adjacent digits are the same (like 22 in 122345).
 Going from left to right, the digits never decrease; they only ever increase or stay the same (like 111123 or 135679).
 """
 from collections import Counter
-from typing import Iterator, ValuesView, List
+from typing import Iterator, List, ValuesView
 
 
 def run() -> None:

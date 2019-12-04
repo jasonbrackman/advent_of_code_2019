@@ -38,6 +38,4 @@ def run():
 
 if __name__ == "__main__":
     tests()
-    elves = [int(line) for line in helpers.get_lines(r"./data/day_01.txt")]
-    print(f"Part01: {part_01(elves)}")
-    print(f"Part02: {part_02(elves)}")
+    run()

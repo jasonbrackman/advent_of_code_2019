@@ -75,12 +75,14 @@ def run():
     assert part_02 == 4259
 
 
-if __name__ == "__main__":
+def run_local():
     # m = Machine(None, None, r'./data/day_02_test.txt')
-
     instructions = parse_instructions(r"./data/day_02.txt")
     part_01 = IntCodeMachine(instructions, noun=12, verb=2).get_result()
     part_02 = brute_force_haystack(instructions, 19690720)
-
     print(f"Part01: {part_01}")
     print(f"Part02: {part_02}")
+
+
+if __name__ == "__main__":
+    run_local()
