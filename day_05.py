@@ -22,6 +22,11 @@ class IntCodeMachine:
         99: "hlt",
     }
 
+    telemetry_flag = False
+    telemetry = dict()
+
+    debug_flag = False
+
     def __init__(
         self,
         instructions: List[int],
@@ -45,6 +50,9 @@ class IntCodeMachine:
         # silent is used to remove the print (annoying when running all AOC problems).
         self.silent = silent
 
+        # Telemetry to help optimization
+        self.telemetry = {i: 0 for i, _ in enumerate(self.memory)}
+
     def get_result(self):
         for _ in range(0, len(self.memory)):
             result = self.op_codes()
@@ -59,7 +67,11 @@ class IntCodeMachine:
         position_modes = [0, 0, 0]
 
         op = self.memory[self.pointer]
+
         self.pointer += 1
+
+        if self.telemetry_flag:
+            self.telemetry[self.pointer] += 1
 
         if len(str(op)) > 2:
             # ABCDE
@@ -184,8 +196,13 @@ def run():
 
     # Part02: Use 5
     m = IntCodeMachine(instructions, hack_input=5, silent=True)
+    m.telemetry_flag = False
     results = m.get_result()
     assert results[1] == 11189491
+
+    if m.telemetry_flag is True:
+        for k, v in m.telemetry.items():
+            print(f"{k:03}: {v}")
 
 
 if __name__ == "__main__":
