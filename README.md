@@ -1,5 +1,4 @@
-# advent_of_code_2019
-* AoC 2019: 
+# Advent of Code 2019 
 ###### Python 3.8 
 ###### Macbook Pro
 ###### 3.1 GHz Dual-Core Intel Core i7
