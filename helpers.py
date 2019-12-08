@@ -46,7 +46,7 @@ def time_it(command):
     t1 = time.perf_counter()
     command()
     print(
-        f"[{str(command.__module__)}.{command.__name__}]: Completed in {time.perf_counter() - t1:0.8f} seconds"
+        f"[{str(command.__module__)}.{command.__name__}]: Completed in {(time.perf_counter() - t1)*1_000:0.1f} ms"
     )
 
 
