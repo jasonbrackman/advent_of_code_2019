@@ -28,12 +28,7 @@ class IntCodeMachine:
     debug_flag = False
 
     def __init__(
-        self,
-        instructions: List[int],
-        noun=None,
-        verb=None,
-        hack_input=None,
-        silent=False,
+        self, instructions: List[int], noun=None, verb=None, silent=False,
     ):
 
         self.pointer = 0
@@ -44,8 +39,8 @@ class IntCodeMachine:
         self.memory[2] = self.memory[2] if verb is None else verb
 
         # for day_05
-        self.hack_input = hack_input
-        self.buffer = ""
+        self.hack_input: List[int] = []
+        self.buffer = None
 
         # silent is used to remove the print (annoying when running all AOC problems).
         self.silent = silent
@@ -53,45 +48,43 @@ class IntCodeMachine:
         # Telemetry to help optimization
         self.telemetry = {i: 0 for i, _ in enumerate(self.memory)}
 
-    def get_result(self):
-        for _ in range(0, len(self.memory)):
-            result = self.op_codes()
-            if result:
-                return result
+    def input(self, input: int):
+        self.hack_input.append(input)
+        return self
 
-    def op_codes(self, debug=False):
-        # for debug purposes freeze the starting pointer
-        pointer = int(self.pointer)
+    # def get_result(self):
+    #     while True:
+    #         result = self.op_codes()
+    #         if result:
+    #             return result
 
-        # set default flags for position_modes
-        position_modes = [0, 0, 0]
+    def op_codes(self):
+        while True:
+            # for debug purposes freeze the starting pointer
+            pointer = int(self.pointer)
 
-        op = self.memory[self.pointer]
+            # set default flags for position_modes
+            position_modes = [0, 0, 0]
 
-        self.pointer += 1
+            op = self.memory[self.pointer]
 
-        if self.telemetry_flag:
-            self.telemetry[self.pointer] += 1
+            self.pointer += 1
 
-        if len(str(op)) > 2:
-            # ABCDE
-            items = list(str(op))
-            while len(items) < 5:
-                items.insert(0, 0)
+            if self.telemetry_flag:
+                self.telemetry[self.pointer] += 1
 
-            op = int("".join(items[-2:]))
-            position_modes = [int(i) for i in reversed(items[0:-2])]
+            if len(str(op)) > 2:
+                # ABCDE
+                items = list(str(op))
+                while len(items) < 5:
+                    items.insert(0, 0)
 
-        if op == 99:
-            """Halt: Exit Now..."""
-            if not self.silent:
-                print("Halting!")
+                op = int("".join(items[-2:]))
+                position_modes = [int(i) for i in reversed(items[0:-2])]
 
-            return self.memory[0], self.buffer
-
-        else:
             if op == 1:  # add
                 args = self.memory[self.pointer : self.pointer + 3]
+
                 value_a = self.memory[args[0]] if position_modes[0] == 0 else args[0]
                 value_b = self.memory[args[1]] if position_modes[1] == 0 else args[1]
                 self.memory[args[2]] = value_a + value_b
@@ -110,9 +103,10 @@ class IntCodeMachine:
 
                 # Hack to allow testing and not have to manually enter in a starting number
                 if len(self.hack_input) == 0:
-                    # print("Need to somehow pause here...")
-                    self.pointer -= 1
-                    return "wait"
+                    print(
+                        "Something went awry -- expect input from previous amp step..."
+                    )
+                    return None
 
                 result = self.hack_input.pop(0)
                 if self.hack_input is None:
@@ -178,11 +172,17 @@ class IntCodeMachine:
 
                 self.pointer += 3
 
+            elif op == 99:
+                """Halt: Exit Now..."""
+                if not self.silent:
+                    print("Halting!")
+                return None
+
             else:
                 raise RuntimeError(f"Expected, 1-9 or 99, but received {op}")
 
-        if self.debug_flag:
-            self.pprint_debug(pointer, op, args, position_modes)
+            if self.debug_flag:
+                self.pprint_debug(pointer, op, args, position_modes)
 
     def pprint_debug(self, pointer, op, args, position_modes):
         print(f"{pointer:04}: {self.symb[op]:>13} [{op}] {args} | {position_modes}")
@@ -197,12 +197,12 @@ def run():
     instructions = parse_instructions(r"./data/day_05.txt")
 
     # Part01: Use 1
-    m = IntCodeMachine(instructions, hack_input=1, silent=True)
+    m = IntCodeMachine(instructions, silent=True).input(1)
     results = m.get_result()
     assert results[1] == 13978427
 
     # Part02: Use 5
-    m = IntCodeMachine(instructions, hack_input=5, silent=True)
+    m = IntCodeMachine(instructions, silent=True).input(5)
     m.telemetry_flag = False
     results = m.get_result()
     assert results[1] == 11189491
@@ -215,39 +215,41 @@ def run():
 def get_result(instructions, phase_settings, result):
 
     for i in phase_settings:
-        hack_inputs = [i, result]
-        m = IntCodeMachine(instructions, hack_input=hack_inputs, silent=True)
-        m.get_result()
+        m = IntCodeMachine(instructions, silent=True).input(i).input(result)
+        m.op_codes()
         result = m.buffer
 
     return result
 
 
-def get_result2(instructions, phase_settings):
-    phases = []
-    for index, i in enumerate(phase_settings):
-        hack_inputs = [i] if index != 0 else [i, index]
+def get_result2(amps):
+    result = 0
+    while result is not None:
 
-        m = IntCodeMachine(instructions, hack_input=hack_inputs, silent=True)
-        phases.append(m)
+        for index, amp in enumerate(amps):
+            results = amp.op_codes()
 
-    try:
-        print("Starting work....")
-        while True:
-            # print("Phases", phases[0].buffer)
-            for index, phase in enumerate(phases):
-                counter = (index + 1) % 5
-                signal = phase.get_result()
-                if signal and signal != "wait":
-                    result = signal[1]
-                    phases[counter].hack_input.append(result)
-                    if index % 5 == 0:
-                        print(f"Result [Phase {index % 5}: {result}")
+            # exit out if None returned
+            if results is None:
+                return result
 
-    except Exception as e:
-        print(e)
+            # else lets do some more work!
+            _, result = results
+            if result is not None:
+                signal = result
+                amps[(index + 1) % 5].input(signal)
 
     return result
+
+
+def generate_amps(instructions, phase_settings):
+    phases = []
+    for index, i in enumerate(phase_settings):
+        m = IntCodeMachine(instructions, silent=True).input(i)
+        if index == 0:
+            m.input(index)
+        phases.append(m)
+    return phases
 
 
 def part_01():
@@ -259,11 +261,22 @@ def part_01():
         result = get_result(instructions, nIndex, result=0)
         if result > highest:
             highest = result
-        # print(nIndex, result)
+
     assert highest == 24625
 
 
 def part_02():
+    instructions = parse_instructions(r"./data/day_07.txt")
+    part02 = get_part_02_response(instructions)
+    assert part02 == 36497698
+
+
+def run():
+    part_01()
+    part_02()
+
+
+def tests():
     test1 = [
         int(i)
         for i in "3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5".split(
@@ -276,34 +289,27 @@ def part_02():
             ","
         )
     ]
-    instructions = parse_instructions(r"./data/day_07.txt")
 
     test1 = get_part_02_response(test1)
     assert test1 == 139629729
     print("Test01 Passed ... ")
-
     test2 = get_part_02_response(test2)
     assert test2 == 18216
     print("Test02 Passed ...")
-
-    part02 = get_part_02_response(instructions)
-    print(part02)
-
-    # not 72995384
 
 
 def get_part_02_response(instructions):
     highest = 0
     for permutation in permutations([5, 6, 7, 8, 9], 5):
         # print(permutation)
-        result = get_result2(instructions, permutation)
+        amps = generate_amps(instructions, permutation)
+        result = get_result2(amps)
         if result > highest:
             highest = result
-        print(permutation, result)
+
     return highest
 
 
 if __name__ == "__main__":
-    part_01()
-    print("part01 Done!")
-    part_02()
+    tests()
+    run()
