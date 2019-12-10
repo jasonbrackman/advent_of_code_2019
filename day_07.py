@@ -155,13 +155,13 @@ class IntCodeMachine:
                 self.pprint_debug(pointer, op, [], position_modes)
 
     def memory_write(self, position, val):
-        while len(self.memory) < position + 1:
+        while len(self.memory) <= position:
             self.memory.append(0)
 
         self.memory[position] = val
 
     def memory_read(self, position):
-        while len(self.memory) < position + 1:
+        while len(self.memory) <= position:
             self.memory.append(0)
         return self.memory[position]
 

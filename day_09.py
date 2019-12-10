@@ -92,7 +92,7 @@ class IntCodeMachine:
             if op == 1:  # add
                 value_a = self.get_value(position_modes[0])
                 value_b = self.get_value(position_modes[1])
-                value_c = self.get_value(2 if position_modes[2] == 2 else 1)
+                value_c = self.set_value(position_modes[2])
                 self.memory_write(value_c, value_a + value_b)
 
                 debug_args = [value_a, value_b, value_c]
@@ -100,7 +100,7 @@ class IntCodeMachine:
             elif op == 2:  # multiplication
                 value_a = self.get_value(position_modes[0])
                 value_b = self.get_value(position_modes[1])
-                value_c = self.get_value(2 if position_modes[2] == 2 else 1)
+                value_c = self.set_value(position_modes[2])
                 self.memory_write(value_c, value_a * value_b)
 
                 debug_args = [value_a, value_b, value_c]
@@ -116,7 +116,7 @@ class IntCodeMachine:
                 if self.hack_input is None:
                     result = input("INPUT:")
 
-                value_c = self.get_value(2 if position_modes[2] == 2 else 1)
+                value_c = self.set_value(position_modes[0])
                 self.memory_write(value_c, int(result))
 
                 self.debug_buffer.insert(0, f"\tINPUT VALUE: {result}")
@@ -160,7 +160,7 @@ class IntCodeMachine:
                 """if less than: set next arg to 1 else 0"""
                 value_a = self.get_value(position_modes[0])
                 value_b = self.get_value(position_modes[1])
-                value_c = self.get_value(2 if position_modes[2] == 2 else 1)
+                value_c = self.set_value(position_modes[2])
                 self.memory_write(value_c, 1 if value_a < value_b else 0)
 
                 debug_args = [value_a, value_b, value_c]
@@ -169,7 +169,7 @@ class IntCodeMachine:
                 """if equal: set next arg to 1 else 0"""
                 value_a = self.get_value(position_modes[0])
                 value_b = self.get_value(position_modes[1])
-                value_c = self.get_value(2 if position_modes[2] == 2 else 1)
+                value_c = self.set_value(position_modes[2])
 
                 val = 1 if value_a == value_b else 0
 
@@ -214,6 +214,16 @@ class IntCodeMachine:
                 while self.debug_buffer:
                     print(self.debug_buffer.pop())
 
+    def set_value(self, position_mode):
+        raw_value = self.memory_read(self.pointer)
+        self.pointer += 1
+        if position_mode == 0:
+            return raw_value
+        elif position_mode == 2:
+            x = raw_value + self.relative_base
+
+            return x
+
     def get_value(self, position_mode):
         """
         - Mode 0: reads memory at pointer value
@@ -224,28 +234,29 @@ class IntCodeMachine:
         self.debug_buffer.insert(0, f"\tCurrent Relative Pointer: {self.relative_base}")
         self.debug_buffer.insert(0, f"\tCurrent Memory: {self.memory}")
 
-        value = self.memory_read(self.pointer)
+        raw_value = self.memory_read(self.pointer)
 
         if position_mode == 0:
             # default mode
             self.debug_buffer.insert(
                 0,
-                f"\t[Mode {position_mode}] MemoryReadAtMemoryPointerValue({value}) = {self.memory_read(value)}",
+                f"\t[Mode {position_mode}] MemoryReadAtMemoryPointerValue({raw_value}) = {self.memory_read(raw_value)}",
             )
-            return_value = self.memory_read(value)
+            return_value = self.memory_read(raw_value)
 
         elif position_mode == 1:
             self.debug_buffer.insert(
-                0, f"\t[Mode {position_mode}] MemoryRead({self.pointer}) = {value}"
+                0, f"\t[Mode {position_mode}] MemoryRead({self.pointer}) = {raw_value}"
             )
-            return_value = value
+            return_value = raw_value
 
         elif position_mode == 2:
             self.debug_buffer.insert(
                 0,
-                f"\t[Mode {position_mode}] MemoryRead({value} + {self.relative_base}) = {self.memory_read(value + self.relative_base)}",
+                f"\t[Mode {position_mode}] MemoryRead({raw_value} + {self.relative_base}) = {self.memory_read(raw_value + self.relative_base)}",
             )
-            return_value = self.memory_read(value + self.relative_base)
+
+            return_value = self.memory_read(raw_value + self.relative_base)
 
         self.pointer += 1
 
@@ -334,12 +345,12 @@ def day_07_tests():
     assert test2 == 18216
 
 
-def test_mode(instructions, flag=False, rb_start=0, test_mode=False):
+def test_mode(instructions, input_=1, debug_flag=False, rb_start=0, test_mode=False):
     collection = []
-    m = IntCodeMachine(instructions).input(1)
+    m = IntCodeMachine(instructions).input(input_)
     m.test_mode = test_mode
     m.relative_base = rb_start
-    m.debug_flag = flag
+    m.debug_flag = debug_flag
     m.silent = True
 
     _, result = m.op_codes()
@@ -380,6 +391,7 @@ def day_09_tests():
     ]
     test2 = [int(x) for x in "1102,34915192,34915192,7,4,7,99,0".split(",")]
     test3 = [int(x) for x in "104,1125899906842624,99".split(",")]
+
     t1 = test_mode(test1)
     assert t1 == test1
     t2 = test_mode(test2)
@@ -388,8 +400,43 @@ def day_09_tests():
     assert t3[0] == test3[1]
 
     test4 = [int(x) for x in "1, 5, 0, 1985, 109, 19, 204, -34, 99".split(",")]
-    t4 = test_mode(test4, flag=False, rb_start=2000)
+    t4 = test_mode(test4, debug_flag=False, rb_start=2000)
     assert t4 == [20]
+
+    test5 = [int(x) for x in "109,1,203,11,209,8,204,1,99,10,0,42,0".split(",")]
+    t5 = test_mode(test5, input_=1, debug_flag=False)
+    print(t5)
+
+    test6 = [
+        int(x)
+        for x in "3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99".split(
+            ","
+        )
+    ]
+    t6 = test_mode(test6, input_=9)
+    print(t6)
+
+    t6 = [int(x) for x in "109, -1, 4, 1, 99".split(",")]  # -1
+    t7 = [int(x) for x in "109, -1, 104, 1, 99".split(",")]  # 1
+    t8 = [int(x) for x in "109, -1, 204, 1, 99".split(",")]  # 109
+    t9 = [int(x) for x in "109, 1, 9, 2, 204, -6, 99".split(",")]  # 204
+    s1 = [int(x) for x in "109, 1, 109, 9, 204, -6, 99".split(",")]  # 204
+    s2 = [int(x) for x in "109, 1, 209, -1, 204, -106, 99".split(",")]  # 204
+    s3 = [int(x) for x in "109, 1, 3, 3, 204, 2, 99".split(",")]  # output output
+    s4 = [int(x) for x in "109, 1, 203, 2, 204, 2, 99".split(",")]  # output input
+    items = [
+        (t6, [-1]),
+        (t7, [1]),
+        (t8, [109]),
+        (t9, [204]),
+        (s1, [204]),
+        (s2, [204]),
+        (s3, [1]),
+        (s4, [1]),
+    ]
+    for item in items:
+        all = test_mode(item[0], debug_flag=False, test_mode=False)
+        assert all == item[1]
 
 
 def run_all_tests():
@@ -404,6 +451,6 @@ def run_all_tests():
 if __name__ == "__main__":
     run_all_tests()
 
-    instructions = parse_instructions(r"./data/day_09.txt")
-    part01 = test_mode(instructions, flag=False, test_mode=True)
-    print(part01)
+    i = parse_instructions(r"./data/day_09.txt")
+    part01 = test_mode(i, debug_flag=False, test_mode=False)
+    assert part01 == [2932210790]
