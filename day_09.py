@@ -78,7 +78,7 @@ class IntCodeMachine:
             self.pointer += 1
 
             if self.telemetry_flag:
-                self.telemetry[self.pointer] += 1
+                self.telemetry[pointer] += 1
 
             # setup the modes
             if len(str(op)) > 2:
@@ -230,31 +230,31 @@ class IntCodeMachine:
         - Mode 1: returns the pointer value
         - Mode 2: reads memory at pointer value + relative_base
         """
-        self.debug_buffer.insert(0, f"\tCurrent Pointer: {self.pointer}")
-        self.debug_buffer.insert(0, f"\tCurrent Relative Pointer: {self.relative_base}")
-        self.debug_buffer.insert(0, f"\tCurrent Memory: {self.memory}")
+        # self.debug_buffer.insert(0, f"\tCurrent Pointer: {self.pointer}")
+        # self.debug_buffer.insert(0, f"\tCurrent Relative Pointer: {self.relative_base}")
+        # self.debug_buffer.insert(0, f"\tCurrent Memory: {self.memory}")
 
         raw_value = self.memory_read(self.pointer)
 
         if position_mode == 0:
             # default mode
-            self.debug_buffer.insert(
-                0,
-                f"\t[Mode {position_mode}] MemoryReadAtMemoryPointerValue({raw_value}) = {self.memory_read(raw_value)}",
-            )
+            # self.debug_buffer.insert(
+            #     0,
+            #     f"\t[Mode {position_mode}] MemoryReadAtMemoryPointerValue({raw_value}) = {self.memory_read(raw_value)}",
+            # )
             return_value = self.memory_read(raw_value)
 
         elif position_mode == 1:
-            self.debug_buffer.insert(
-                0, f"\t[Mode {position_mode}] MemoryRead({self.pointer}) = {raw_value}"
-            )
+            # self.debug_buffer.insert(
+            #     0, f"\t[Mode {position_mode}] MemoryRead({self.pointer}) = {raw_value}"
+            # )
             return_value = raw_value
 
         elif position_mode == 2:
-            self.debug_buffer.insert(
-                0,
-                f"\t[Mode {position_mode}] MemoryRead({raw_value} + {self.relative_base}) = {self.memory_read(raw_value + self.relative_base)}",
-            )
+            # self.debug_buffer.insert(
+            #     0,
+            #     f"\t[Mode {position_mode}] MemoryRead({raw_value} + {self.relative_base}) = {self.memory_read(raw_value + self.relative_base)}",
+            # )
 
             return_value = self.memory_read(raw_value + self.relative_base)
 
@@ -265,7 +265,7 @@ class IntCodeMachine:
     def pprint_debug(self, pointer, op, args, position_modes):
         self.debug_buffer.insert(
             0,
-            f"{pointer:04}: [{op:02}]: {self.symb[op]:>13} {tuple(args)} | Modes: {position_modes} | {self.relative_base}",
+            f"{self.telemetry[pointer]:06} | {pointer:04}: [{op:02}]: {self.symb[op]:>13} {tuple(args)} | Modes: {position_modes} | {self.relative_base}",
         )
 
 
@@ -345,12 +345,20 @@ def day_07_tests():
     assert test2 == 18216
 
 
-def test_mode(instructions, input_=1, debug_flag=False, rb_start=0, test_mode=False):
+def test_mode(
+    instructions,
+    input_=1,
+    debug_flag=False,
+    rb_start=0,
+    test_mode=False,
+    telemetry_flag=False,
+):
     collection = []
     m = IntCodeMachine(instructions).input(input_)
     m.test_mode = test_mode
     m.relative_base = rb_start
     m.debug_flag = debug_flag
+    m.telemetry_flag = telemetry_flag
     m.silent = True
 
     _, result = m.op_codes()
@@ -448,9 +456,18 @@ def run_all_tests():
     print("Day09 Tests Pass...")
 
 
-if __name__ == "__main__":
-    run_all_tests()
-
+def run():
     i = parse_instructions(r"./data/day_09.txt")
+
     part01 = test_mode(i, debug_flag=False, test_mode=False)
     assert part01 == [2932210790]
+
+    part02 = test_mode(
+        i, debug_flag=False, test_mode=False, telemetry_flag=False, input_=2
+    )
+    assert part02 == [73144]
+
+
+if __name__ == "__main__":
+    run_all_tests()
+    run()
