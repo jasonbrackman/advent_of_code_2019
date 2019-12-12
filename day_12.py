@@ -50,34 +50,23 @@ def get_moons(lines):
     return moons
 
 
-def pprint_moon_info():
-    hashes = set()
-    # total_energy = 0
-    for moon in moons:
-        moon.apply_velocity()
-        hashes.add(hash(moon))
-    return hashes
-    # total_energy += moon.calc_total_energy()
-    # print(moon)
-    # print(f"Total Energy of System: {total_energy}")
+def pprint_moon_info(moons, step=0, silent=False):
+    total_energy = sum(moon.calc_total_energy() for moon in moons)
+
+    if not silent:
+        print(f"Step [{step + 1}] has a Total Energy of {total_energy}")
+        # for moon in moons:
+        #     print(f"\t{moon} |==> {moon.calc_total_energy()} = {abs(moon.x) + abs(moon.y) + abs(moon.z)} * {abs(moon.vx) + abs(moon.vy) + abs(moon.vz)}")
+
+    return total_energy
 
 
-if __name__ == "__main__":
+def part_01(lines):
 
-    lines = helpers.get_lines(r"./data/day_12.txt")
-    test_01 = """<x=-1, y=0, z=2>
-                <x=2, y=-10, z=-7>
-                <x=4, y=-8, z=8>
-                <x=3, y=5, z=-1>
-    """.split(
-        "\n"
-    )
+    result = 0
     moons = get_moons(lines)
-    hashes = pprint_moon_info()
-
-    for step in range(1_000_000_000):
-        if step % 500_000 == 0:
-            print(f"Step {step+1}:")
+    for step in range(1000):
+        # print(f"Step {step + 1}:")
         for _ in range(len(moons)):
             a, b, c, d = moons
             a.apply_gravity(b)
@@ -85,8 +74,47 @@ if __name__ == "__main__":
             a.apply_gravity(d)
             moons.rotate(1)
 
-        new_hashes = pprint_moon_info()
-        if all(hash in hashes for hash in new_hashes):
-            print(f"Winner: {step+1}")
+        [moon.apply_velocity() for moon in moons]
+
+        result = pprint_moon_info(moons, step, silent=True)
+
+    assert result == 9139
+
+def part_02(lines, silent=False):
+
+    hashes = set()
+    moons = get_moons(lines)
+    pprint_moon_info(moons)
+    for step in range(300_000_000_000):
+        for _ in range(len(moons)):
+            a, b, c, d = moons
+            a.apply_gravity(b)
+            a.apply_gravity(c)
+            a.apply_gravity(d)
+            moons.rotate(1)
+        [moon.apply_velocity() for moon in moons]
+        if not silent:
+            pprint_moon_info(moons, step)
+        new_hash = hash((moons[0], moons[1], moons[2], moons[3]))
+        if new_hash in hashes:
+            pprint_moon_info(moons, step=step-1, silent=False)
+            return step
         else:
-            hashes.union(new_hashes)
+            hashes.add(new_hash)
+
+
+if __name__ == "__main__":
+    lines = helpers.get_lines(r"./data/day_12.txt")
+    test_01 = """<x=-1, y=0, z=2>
+                <x=2, y=-10, z=-7>
+                <x=4, y=-8, z=8>
+                <x=3, y=5, z=-1>""".split(
+        "\n"
+    )
+
+    part_01(lines)
+
+    part_02_test_01 = part_02(test_01)
+    assert part_02_test_01 == 2772, f"Expected 2772, but got {part_02_test_01}"
+
+    # part_02(lines)
