@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections import deque
+
 import helpers
 
 pattern = re.compile(r"^.*=(-?\d+).*=(-?\d+).*=(-?\d+).*")
@@ -24,12 +24,17 @@ class Moon:
         return hash((self.x, self.y, self.z, self.vx, self.vy, self.vz))
 
     def apply_gravity(self, other: Moon):
-        if self.x != other.x:
-            self.vx += 1 if self.x < other.x else -1
-        if self.y != other.y:
-            self.vy += 1 if self.y < other.y else -1
-        if self.z != other.z:
-            self.vz += 1 if self.z < other.z else -1
+        x = 1 if (x := self.x - other.x) < 0 else (0 if x == 0 else -1)
+        y = 1 if (y := self.y - other.y) < 0 else (0 if y == 0 else -1)
+        z = 1 if (z := self.z - other.z) < 0 else (0 if z == 0 else -1)
+
+        self.vx += x
+        self.vy += y
+        self.vz += z
+
+        other.vx -= x
+        other.vy -= y
+        other.vz -= z
 
     def apply_velocity(self):
         self.x += self.vx
@@ -43,7 +48,7 @@ class Moon:
 
 
 def get_moons(lines):
-    moons = deque([])
+    moons = []
     for line in lines:
         x, y, z = re.search(pattern, line).groups()
         moons.append(Moon(int(x), int(y), int(z)))
@@ -55,8 +60,10 @@ def pprint_moon_info(moons, step=0, silent=False):
 
     if not silent:
         print(f"Step [{step + 1}] has a Total Energy of {total_energy}")
-        # for moon in moons:
-        #     print(f"\t{moon} |==> {moon.calc_total_energy()} = {abs(moon.x) + abs(moon.y) + abs(moon.z)} * {abs(moon.vx) + abs(moon.vy) + abs(moon.vz)}")
+        for moon in moons:
+            print(
+                f"\t{moon} |==> {moon.calc_total_energy()} = {abs(moon.x) + abs(moon.y) + abs(moon.z)} * {abs(moon.vx) + abs(moon.vy) + abs(moon.vz)}"
+            )
 
     return total_energy
 
@@ -66,13 +73,13 @@ def part_01(lines):
     result = 0
     moons = get_moons(lines)
     for step in range(1000):
-        # print(f"Step {step + 1}:")
-        for _ in range(len(moons)):
-            a, b, c, d = moons
-            a.apply_gravity(b)
-            a.apply_gravity(c)
-            a.apply_gravity(d)
-            moons.rotate(1)
+        a, b, c, d = moons
+        a.apply_gravity(b)
+        a.apply_gravity(c)
+        a.apply_gravity(d)
+        b.apply_gravity(c)
+        b.apply_gravity(d)
+        c.apply_gravity(d)
 
         [moon.apply_velocity() for moon in moons]
 
@@ -80,27 +87,40 @@ def part_01(lines):
 
     assert result == 9139
 
+
 def part_02(lines, silent=False):
 
     hashes = set()
     moons = get_moons(lines)
-    pprint_moon_info(moons)
-    for step in range(300_000_000_000):
-        for _ in range(len(moons)):
-            a, b, c, d = moons
-            a.apply_gravity(b)
-            a.apply_gravity(c)
-            a.apply_gravity(d)
-            moons.rotate(1)
-        [moon.apply_velocity() for moon in moons]
-        if not silent:
-            pprint_moon_info(moons, step)
+    for step in range(300_000_500_000):
+        if step % 1_000_000 == 0:
+            print(f"Processed up to step {step}...")
+        a, b, c, d = moons
+        a.apply_gravity(b)
+        a.apply_gravity(c)
+        a.apply_gravity(d)
+        b.apply_gravity(c)
+        b.apply_gravity(d)
+        c.apply_gravity(d)
+
+        a.apply_velocity()
+        b.apply_velocity()
+        c.apply_velocity()
+        d.apply_velocity()
+
         new_hash = hash((moons[0], moons[1], moons[2], moons[3]))
         if new_hash in hashes:
-            pprint_moon_info(moons, step=step-1, silent=False)
+            pprint_moon_info(moons, step=step - 1, silent=silent)
             return step
         else:
             hashes.add(new_hash)
+
+
+def run():
+    part_02_test_01 = part_02(test_01, silent=True)
+    assert part_02_test_01 == 2772, f"Expected 2772, but got {part_02_test_01}"
+
+    print(part_02(lines, silent=True))
 
 
 if __name__ == "__main__":
@@ -114,7 +134,7 @@ if __name__ == "__main__":
 
     part_01(lines)
 
-    part_02_test_01 = part_02(test_01)
-    assert part_02_test_01 == 2772, f"Expected 2772, but got {part_02_test_01}"
+    # import cProfile
+    # cProfile.run("run()")
 
-    # part_02(lines)
+    run()
