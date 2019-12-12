@@ -1,5 +1,6 @@
-import helpers
 from collections import deque
+
+import helpers
 
 
 class SpaceNode:

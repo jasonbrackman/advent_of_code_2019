@@ -7,6 +7,7 @@ import day_06
 import day_07
 import day_08
 import day_09
+import day_10
 from helpers import time_it_all
 
 
@@ -21,6 +22,7 @@ def main():
         day_07.run,
         day_08.run,
         day_09.run,
+        day_10.run,
     ]
     time_it_all(codez)
 

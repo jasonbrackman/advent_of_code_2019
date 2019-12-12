@@ -3,8 +3,9 @@ The digits fill each row of the image left-to-right,
 then move downward to the next row,
 filling rows top-to-bottom until every pixel of the image is filled."""
 
-import helpers
 from collections import Counter
+
+import helpers
 
 
 def parse_data():
