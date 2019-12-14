@@ -1,5 +1,5 @@
 from itertools import permutations
-from typing import List
+from typing import Callable, List, Optional
 
 import helpers
 
@@ -24,19 +24,26 @@ class IntCodeMachine:
     debug_flag = False
 
     def __init__(
-        self, instructions: List[int], noun=None, verb=None, silent=False,
+        self,
+        instructions: List[int],
+        quarters=None,
+        noun=None,
+        verb=None,
+        silent=False,
     ):
 
         self.pointer = 0
         self.relative_base = 0
         self.memory = list(instructions)
 
-        # for day_02
+        # for day_02/day13
+        self.memory[0] = self.memory[0] if quarters is None else quarters
         self.memory[1] = self.memory[1] if noun is None else noun
         self.memory[2] = self.memory[2] if verb is None else verb
 
         # for day_05
         self.hack_input: List[int] = []
+        self.stream_input: Optional[Callable] = None
         self.buffer = None
         self.debug_buffer = []
 
@@ -64,6 +71,11 @@ class IntCodeMachine:
     def input(self, input: int):
         self.hack_input.append(input)
         return self
+
+    def stream_caller(self):
+        r = next(self.stream_input)
+        # print("R:", r)
+        return r
 
     def op_codes(self):
         while True:
@@ -108,12 +120,16 @@ class IntCodeMachine:
             elif op == 3:  # input to param
 
                 # Hack to allow testing and not have to manually enter in a starting number
-                if len(self.hack_input) == 0:
+                if len(self.hack_input) == 0 and self.stream_input is None:
                     raise RuntimeError("Expected input from previous amp step...")
 
-                result = self.hack_input.pop(0)
+                result = (
+                    self.hack_input.pop(0)
+                    if self.stream_input is None
+                    else self.stream_caller()
+                )
 
-                if self.hack_input is None:
+                if self.hack_input is None and self.stream_input is None:
                     result = input("INPUT:")
 
                 value_c = self.set_value(position_modes[0])

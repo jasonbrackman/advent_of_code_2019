@@ -3,9 +3,9 @@ from __future__ import annotations
 import re
 import sys
 from dataclasses import dataclass
-import helpers
-from typing import Callable, Optional
+from typing import Optional
 
+import helpers
 
 pattern = re.compile(r"^.*=(-?\d+).*=(-?\d+).*=(-?\d+).*")
 
