@@ -1,3 +1,4 @@
+import os
 from typing import NamedTuple
 
 from day_09 import IntCodeMachine, parse_instructions
@@ -102,6 +103,7 @@ class Arcade:
                 print(self.state[r][c], end="")
             print()
         print(f"SCORE: {self.score}")
+        os.system("clear")
 
 
 def run():
