@@ -31,7 +31,7 @@ class Image:
         # Default background is near black
         self.pixels = [["20 20 20\n"] * self.cols for _ in range(self.rows)]
 
-    def pixel(self, row, col, colour):
+    def pixel(self, row, col, colour: str):
         if colour not in self.COLOURS:
             raise ValueError(
                 f"Expected one of the following colours: {self.COLOURS.keys()}"

@@ -77,7 +77,7 @@ def bfs(state, goal, successors, by_level=None, min_path_length=0, debug=False):
 
     spaces_visited_at_level = []
     frontier = deque([Node(state, None)])
-    visited = {hash(state)}
+    visited = {state}
 
     count = 1
     while frontier:
@@ -86,19 +86,20 @@ def bfs(state, goal, successors, by_level=None, min_path_length=0, debug=False):
         current_node = frontier.popleft()
         current_state = current_node.state
         current_level = current_node.level
-        if debug and count % 100 == 0:
-            print(f"{count:^10}")
-            print(current_state)
+        if debug:
+            print(f"{count:^10}: {current_state}")
+
         if goal(current_state):
             if current_level < min_path_length:
                 longest_path = current_level
                 continue
+
             return current_node
 
         for neighbor in successors(current_state):
-            if hash(neighbor) in visited:
+            if neighbor in visited:
                 continue
-            visited.add(hash(neighbor))
+            visited.add(neighbor)
             frontier.append(Node(neighbor, current_node, level=current_level + 1))
 
         # Not sure how to make this more generic
