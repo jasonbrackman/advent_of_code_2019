@@ -1,8 +1,11 @@
 from __future__ import annotations
-from typing import List, NamedTuple, Optional
-import helpers
-from dataclasses import dataclass
+
+import math
 import re
+from collections import defaultdict
+from typing import List
+
+import helpers
 
 
 class Material:
@@ -35,6 +38,23 @@ def parse_lines(lines):
     return recipes
 
 
+def get_max_fuel_for_ore(results, max_ore=1_000_000_000_000):
+    min_ = 1
+    max_ = 1_000_000_000
+
+    result = 0
+    while True:
+        temp = min_ + (max_ - min_) // 2
+        result = get_ore_number(results, temp)
+
+        if result < max_ore:
+            min_ = temp
+        else:
+            max_ = temp
+        if max_ - min_ == 1:
+            return min_
+
+
 def tests():
     test01 = """10 ORE => 10 A
                 1 ORE => 1 B
@@ -61,6 +81,37 @@ def tests():
                 165 ORE => 2 GPVTF
                 3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT"""
 
+    test04 = """2 VPVL, 7 FWMGM, 2 CXFTF, 11 MNCFX => 1 STKFG
+                17 NVRVD, 3 JNWZP => 8 VPVL
+                53 STKFG, 6 MNCFX, 46 VJHF, 81 HVMC, 68 CXFTF, 25 GNMV => 1 FUEL
+                22 VJHF, 37 MNCFX => 5 FWMGM
+                139 ORE => 4 NVRVD
+                144 ORE => 7 JNWZP
+                5 MNCFX, 7 RFSQX, 2 FWMGM, 2 VPVL, 19 CXFTF => 3 HVMC
+                5 VJHF, 7 MNCFX, 9 VPVL, 37 CXFTF => 6 GNMV
+                145 ORE => 6 MNCFX
+                1 NVRVD => 8 CXFTF
+                1 VJHF, 6 MNCFX => 4 RFSQX
+                176 ORE => 6 VJHF"""
+
+    test05 = """171 ORE => 8 CNZTR
+                7 ZLQW, 3 BMBT, 9 XCVML, 26 XMNCP, 1 WPTQ, 2 MZWV, 1 RJRHP => 4 PLWSL
+                114 ORE => 4 BHXH
+                14 VRPVC => 6 BMBT
+                6 BHXH, 18 KTJDG, 12 WPTQ, 7 PLWSL, 31 FHTLT, 37 ZDVW => 1 FUEL
+                6 WPTQ, 2 BMBT, 8 ZLQW, 18 KTJDG, 1 XMNCP, 6 MZWV, 1 RJRHP => 6 FHTLT
+                15 XDBXC, 2 LTCX, 1 VRPVC => 6 ZLQW
+                13 WPTQ, 10 LTCX, 3 RJRHP, 14 XMNCP, 2 MZWV, 1 ZLQW => 1 ZDVW
+                5 BMBT => 4 WPTQ
+                189 ORE => 9 KTJDG
+                1 MZWV, 17 XDBXC, 3 XCVML => 2 XMNCP
+                12 VRPVC, 27 CNZTR => 2 XDBXC
+                15 KTJDG, 12 BHXH => 5 XCVML
+                3 BHXH, 2 VRPVC => 7 MZWV
+                121 ORE => 7 VRPVC
+                7 XCVML => 6 RJRHP
+                5 BHXH, 4 VRPVC => 5 LTCX"""
+
     results = parse_lines(test01.split("\n"))
     r = get_ore_number(results)
     assert r == 31, f"Expected 31, but got {r}"
@@ -73,41 +124,58 @@ def tests():
     r = get_ore_number(results)
     assert r == 13312
 
+    # print("Starting part02 Tests:")
+    results = parse_lines(test03.split("\n"))
+    total = get_max_fuel_for_ore(results)
+    assert total == 82892753
 
-def get_ore_number(results):
+    results = parse_lines(test04.split("\n"))
+    total = get_max_fuel_for_ore(results)
+    assert total == 5586022
+
+    results = parse_lines(test05.split("\n"))
+    total = get_max_fuel_for_ore(results)
+    assert total == 460664
+
+
+def get_ore_number(results, starting_fuel=1):
     ores = 0
+
     extras = {k: 0 for k in results.keys()}
-    totals = {k: 0 for k in results.keys()}
-    queue = ["FUEL"]
+
+    queue = [("FUEL", starting_fuel)]
+
     while queue:
-        current = queue.pop()
+        current, multiplier = queue.pop()
+
         for node in results[current].inputs:
-            want = node
-            item = results[want.name]
-            # print(want.name, "comes in lots of", item.amount, "and we want", want.amount)
+            node_name = node.name
+            node_want = node.amount * multiplier
+            node_item = results[node_name]
 
-            total = extras[want.name]
-            extras[want.name] = 0
-            while total < want.amount:
-                totals[item.name] += item.amount
-                total += item.amount
+            total = extras[node_name]
 
-                queue.append(item.name)
-                # print("\t", item)
-            left_over = total - want.amount
-            extras[want.name] += left_over
-            if node.name == "ORE":
+            local_multiplier = math.ceil((node_want - total) / node_item.amount)
+            total += node_item.amount * local_multiplier
+            queue.append((node_item.name, local_multiplier))
+
+            extras[node_name] = left_over = total - node_want
+            if node_name == "ORE":
                 ores += total - left_over
 
     return ores
 
 
 def run():
-    # part 01
+
     lines = helpers.get_lines(r"./data/day_14.txt")
     results = parse_lines(lines)
-    r = get_ore_number(results)
-    assert r == 378929
+
+    part01 = get_ore_number(results)
+    assert part01 == 378929
+
+    part02 = get_max_fuel_for_ore(results)
+    assert part02 == 3445249
 
 
 if __name__ == "__main__":
