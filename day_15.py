@@ -85,7 +85,7 @@ class Maze:
         with open(r"./data/day_15.json", "w") as file:
             json.dump(remap_keys(self.map), file)
 
-    def display(self):
+    def display(self, mark=None, level=None):
         rows = [k[0] for k, v in self.map.items()]
         cols = [k[1] for k, v in self.map.items()]
         rows_min, rows_max = min(rows), max(rows)
@@ -93,8 +93,8 @@ class Maze:
         row_offset, col_offset = abs(rows_min), abs(cols_min)
 
         image = display.Image(abs(rows_min) + rows_max, abs(cols_min) + cols_max)
-        for r in range(rows_max + row_offset + 1):
-            for c in range(cols_max + col_offset + 1):
+        for r in range(rows_max + row_offset):
+            for c in range(cols_max + col_offset):
                 icon = self.map.get((r - row_offset, c - col_offset), "m")
                 if icon == "m":
                     image.pixel(r, c, "blue")
@@ -106,8 +106,11 @@ class Maze:
                     image.pixel(r, c, "green")
                 elif icon == "S":
                     image.pixel(r, c, "purple")
-
-        image.paint(r"./display/day_15.ppm")
+        if mark:
+            for p in mark:
+                image.pixel(p[0] + row_offset, p[1] + col_offset, "green")
+        num = level if level else 0
+        image.paint(rf"./display/day_15_{num:03}.ppm")
 
 
 def shortest_path_to_oxygen(m):
@@ -118,7 +121,20 @@ def shortest_path_to_oxygen(m):
 
 
 def steps_to_oxygen_filled_maze(m):
-    pass
+    level = -1  # first item doesn't count
+    visited = [m.goal_pos]
+    results = m.successors(m.goal_pos)
+    while results:
+        new_results = []
+        for t in results:
+            if t not in visited:
+                new_results.extend(m.successors(t))
+                visited.append(t)
+        results = new_results
+        # Uncomment to generate the ppm layers
+        # m.display(mark=visited, level=level)
+        level += 1
+    return level
 
 
 def run():
@@ -126,17 +142,28 @@ def run():
     if len(m.map) == 1:
         m.explore()
         m.save_map()
+
+    # only use if you want to use the random generator
+    # to search more of the maze...
+    # update_existing_map_exploration(m)
+
+    # Only uncomment to generate the ppm image of the maze so far
+    # m.display()
+
+    part01 = shortest_path_to_oxygen(m)
+    assert part01 == 212
+
+    part02 = steps_to_oxygen_filled_maze(m)
+    assert part02 == 358
+
+
+def update_existing_map_exploration(m):
     old_map_size = len(m.map)
     m.explore()
     if len(m.map) > old_map_size:
         print("found more info...")
         m.save_map()
         m.display()
-
-    part01 = shortest_path_to_oxygen(m)
-    assert part01 == 212
-
-    steps_to_oxygen_filled_maze(m)
 
 
 if __name__ == "__main__":
