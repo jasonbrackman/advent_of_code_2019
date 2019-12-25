@@ -1,6 +1,13 @@
 from day_09 import IntCodeMachine, parse_instructions
+from collections import deque
+from itertools import combinations, permutations
+from typing import Set, Tuple, List
 
-from typing import Set, Tuple
+
+class Node:
+    def __init__(self, state, parent):
+        self.state = state
+        self.parent = parent
 
 
 class Ascii:
@@ -63,11 +70,19 @@ class Ascii:
                     self.current_pos = {(r, c): self.grid[r][c]}
                     self.grid[r][c] = "#"
 
-    def goal(self, visited):
-        return len(self.scaffolding) == len(visited)
+    def goal(self, visited: List[str], node: Node) -> List:
+        if len(self.scaffolding) == len(visited):
+            items = format_search_results(node)
+            return is_pattern(items)
+        return []
 
-    def add_positions(self, pos1, pos2):
+    @staticmethod
+    def add_positions(pos1, pos2):
         return pos1[0] + pos2[0], pos1[1] + pos2[1]
+
+    @staticmethod
+    def sub_positions(pos1, pos2):
+        return abs(pos1[0] - pos2[0] + pos1[1] - pos2[1])
 
     def successors(self, position):
 
@@ -76,12 +91,16 @@ class Ascii:
         index = dirs.index(v)
 
         succs = []
-        for (x, y), direction in zip(
-            self.dirs[v], [dirs[(index - 1) % len(dirs)], dirs[(index + 1) % len(dirs)]]
-        ):
+        directions = {
+            "^": ["<", ">"],
+            "v": ["<", ">"],
+            ">": ["^", "v"],
+            "<": ["^", "v"],
+        }
+
+        for (x, y), direction in zip(self.dirs[v], directions[dirs[index]]):
             moves = []
             xn, yn = self.add_positions(k, (x, y))
-
             while True:
 
                 if 0 <= xn < len(self.grid) and 0 <= yn < len(self.grid[0]):
@@ -89,29 +108,8 @@ class Ascii:
                         moves.append((xn, yn))
                         xn, yn = self.add_positions((xn, yn), (x, y))
                     else:
-                        if moves:
-                            # are any intersections available?
-                            for index, cross in enumerate(moves):
-                                # can be in three directions
-                                if cross in self.crossovers:
-                                    succs.append(
-                                        {direction: moves[: index + 1]}
-                                    )  # forward
-                                    cross_dirs = (
-                                        ["<", ">"]
-                                        if direction in ["^", "v"]
-                                        else ["^", "v"]
-                                    )
-                                    print(direction, cross_dirs)
-
-                                    for d in cross_dirs:
-                                        if direction == d:
-                                            raise Exception("Expected opposites...")
-                                        succs.append({d: moves[: index + 1]})  # left
-
                         break
                 else:
-
                     break
 
             if moves:
@@ -131,120 +129,134 @@ class Ascii:
             print()
 
 
-def test():
-    test01 = """#######...#####
-                #.....#...#...#
-                #.....#...#...#
-                ......#...#...#
-                ......#...###.#
-                ......#.....#.#
-                ^########...#.#
-                ......#.#...#.#
-                ......#########
-                ........#...#..
-                ....#########..
-                ....#...#......
-                ....#...#......
-                ....#...#......
-                ....#####......""".split(
-        "\n"
-    )
-    test01 = [list(x.strip()) for x in test01]
-    direction = ["^", ">", "v", "<"]
-
-    def get_start_pos_and_scaffolding():
-        needle_pos = -1, -1
-        scaffolding = set()
-        for r in range(len(test01)):
-            for c in range(len(test01[0])):
-                print(test01[r][c], end="")
-                if test01[r][c] in direction:
-                    needle_pos = r, c
-                elif test01[r][c] == "#":
-                    scaffolding.add((r, c))
-            print()
-        return needle_pos, scaffolding
-
+def do_search(machine):
+    frontier = deque([Node(machine.current_pos, None)])
+    cached = {str(machine.current_pos)}
     visited = set()
-    current_pos, scaffolding = get_start_pos_and_scaffolding()
-    assert current_pos != (
-        -1,
-        -1,
-    ), f"Expected something other than -1, -1, but got {current_pos}"
-    assert len(scaffolding) == 76
+    while frontier:
+        node = frontier.pop()
+        if winners := machine.goal(visited, node):
+            return node, winners
 
-    def goal():
-        return len(visited) == len(scaffolding)
+        for child in machine.successors(node.state):
+            if str(child) not in cached:
+                cached.add(str(child))
+                for k, v in child.items():
+                    if v:
+                        for item in v:
+                            visited.add(item)
+                        new = {v[-1]: k}
+                        frontier.append(Node(new, node))
 
-    def successors(pos):
-        # can only go left or right
-        ...
+
+def format_search_results(node):
+    # need to convert this now into movement instructions
+    final_list = []
+    while node.parent:
+        final_list.append(node.state)
+        node = node.parent
+    final_list.append(node.state)
+    final_list = list(reversed(final_list))
+    dirs = list(Ascii.dirs.keys())
+    items = []
+    for (a, b) in zip(final_list, final_list[1:]):
+        k1, v1 = [(k, v) for k, v in a.items()][0]
+        k2, v2 = [(k, v) for k, v in b.items()][0]
+
+        icon = "R" if dirs[(dirs.index(v1) + 1) % len(dirs)] == v2 else "L"
+        distance = Ascii.sub_positions(k1, k2)
+        items.append(f"{icon},{distance}")
+    return items
 
 
-class Node:
-    def __init__(self, state, parent):
-        self.state = state
-        self.parent = parent
+def is_pattern(items: List[str]) -> List:
+    patterns = {
+        2: zip(items, items[1:]),
+        3: zip(items, items[1:], items[2:]),
+        4: zip(items, items[1:], items[2:], items[3:]),
+        5: zip(items, items[1:], items[2:], items[3:], items[4:]),
+    }
+
+    results = set()
+    for k, v in patterns.items():
+        repeats = [r for r in v]
+        if len(repeats) != len(set(repeats)):
+            for i in set(repeats):
+                if repeats.count(i) > 1:
+                    results.add(i)
+
+    return three_combos_used(items, results)
+
+
+def three_combos_used(directions, patterns, r_length=3) -> List:
+    winners = []
+
+    full_string = "".join(directions)
+
+    combos = combinations(patterns, r_length)
+
+    for combo in combos:
+
+        perms = permutations(combo)
+        for perm in perms:
+            new_string = str(full_string)
+            for f in perm:
+                par_string = "".join(f)
+                if par_string in new_string:
+                    new_string = new_string.replace(par_string, " ")
+            if new_string.strip() == "":
+                main = (
+                    str(full_string)
+                    .replace("".join(combo[0]), "A")
+                    .replace("".join(combo[1]), "B")
+                    .replace("".join(combo[2]), "C")
+                )
+                function_a = combo[0]
+                function_b = combo[1]
+                function_c = combo[2]
+
+                winners.append(
+                    [
+                        ",".join(list(main)),
+                        ",".join(function_a),
+                        ",".join(function_b),
+                        ",".join(function_c),
+                    ]
+                )
+
+    return winners
 
 
 def run():
     instructions = parse_instructions(r"./data/day_17.txt")
 
+    # Part 01
     ascii = Ascii(instructions)
     ascii.extract_grid()
     ascii.set_current_pos()
     part01 = ascii.identify_crossovers()
     assert part01 == 4408
 
-    ascii.display()
+    # Gather info for part2
+    results = do_search(ascii)
 
-    # BFS
-    frontier = [Node(ascii.current_pos, None)]  # expecting {pos: direction icon}
-    cached = {str(ascii.current_pos)}
-    visited = set()
-    while frontier:
-        node = frontier.pop()
-        if ascii.goal(visited):
-            print("visited everything")
-            return node
+    program_routines = [] if results is None else results[1][0]
+    program_routines.append("n")
 
-        added_something_new = False
-        for child in ascii.successors(node.state):
-            if str(child) not in cached:
-                cached.add(str(child))
-                for k, v in child.items():
-                    if v:
-                        for item in v:
-                            if item not in visited:
-                                visited.add(item)
-                        new = {v[-1]: k}
-                        frontier.append(Node(new, node))
+    # Part 2 needs to run the program in a specific way
+    ascii = Ascii(instructions, 2)
+    for routine in program_routines:
+        for c in list(routine):
+            ascii.m.input(ord(c))
+        ascii.m.input(ord("\n"))
 
-    ascii.display(visited)
-
-    # ascii = Ascii(instructions, 2)
-    # routines = ["A,B,C", "R,2,L,2", "R,2,L,2", "R,2,L,2", "y"]
-    # for routine in routines:
-    #     for c in list(routine):
-    #         ascii.m.input(ord(c))
-    #     ascii.m.input(ord("\n"))
-    #
-    # while True:
-    #     results = ascii.m.op_codes()
-    #     if results is None:
-    #         print(ascii.m.buffer)
-    #         break
-    #     op, code = results
-    #     print(chr(code), end="")
-
-    """Accepts movement routine.  Includes the ascii letters ord(A), ord(B), or ord(C), followed by an ord(\\n)"""
+    while True:
+        results = ascii.m.op_codes()
+        if results is None:
+            part02 = ascii.m.buffer
+            break
+    assert part02 == 862452
 
 
 if __name__ == "__main__":
-    # test()
-    r = run()
-    # need to convert this now into movement instructions
-    while r.parent:
-        print(r.state)
-        r = r.parent
-    print(r.state)
+    run()
