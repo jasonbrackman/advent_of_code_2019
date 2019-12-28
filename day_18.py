@@ -1,20 +1,66 @@
 from __future__ import annotations
-
-import sys
-from collections import deque, namedtuple
-import copy
-from typing import List, Optional, TypeVar
-
-from dataclasses import dataclass
 import helpers
+from collections import deque, namedtuple
+from typing import NamedTuple, Optional, List, TypeVar
+from dataclasses import dataclass
+
+
+class Pos(NamedTuple):
+    row: int
+    col: int
+
+
+class Maze:
+    @classmethod
+    def load_object_data(cls, instructions):
+        cls.maze: List[List[str]] = [list(line) for line in instructions]
+        cls.rows = len(cls.maze)
+        cls.cols = len(cls.maze[0])
+        cls.keys = dict()
+
+        for r in range(cls.rows):
+            for c in range(cls.cols):
+                icon = cls.maze[r][c]
+                if icon.isalpha() and icon.islower():
+                    cls.keys[icon] = Pos(r, c)
+                elif icon == "@":
+                    cls.current_pos = Pos(r, c)
+
+        return cls()
+
+    def display(self, path=None):
+        # Header:
+        print(" ", end="  ")
+        [print(f"{index:02}", end=" ") for index in range(self.cols)]
+        print()
+
+        for row in range(self.rows):
+            print(f"{row:02}", end="  ")
+            for col in range(self.cols):
+                icon = "X" if path and Pos(row, col) in path else self.maze[row][col]
+                icon = ' ' if icon == '.' else icon
+                print(icon, end="")
+            print()
+
+    def goal(self, keys):
+        return len(keys) == len(self.keys)
+
+    def successors(self, state: SearchState) -> Optional[List[Pos]]:
+        neighbors = []
+        for (r, c) in [(-1, 0), (1, 0), (0, 1), (0, -1)]:
+            row = state.pos.row + r
+            col = state.pos.col + c
+            if 0 <= row < self.rows and 0 <= col < self.cols:
+                icon = self.maze[row][col]
+                if icon == "#" or (icon.isalpha() and icon.isupper() and icon.lower() not in state.keys):
+                    continue
+                neighbors.append(Pos(row, col))
+
+        return neighbors
+
 
 T = TypeVar("T")
 
-
-@dataclass
-class Node2:
-    state: T
-    parent: Optional[Node]
 
 @dataclass
 class Node:
@@ -22,83 +68,41 @@ class Node:
     parent: Optional[Node]
     steps: int
 
-    def get_total(self):
-        total = 0
-        parent = self
+
+SearchState = namedtuple("SearchState", "pos, keys")
+
+
+def bfs(maze):
+    frontier = deque([Node(SearchState(maze.current_pos, tuple()), None, 0)])
+    visited = set()
+
+    while frontier:
+        node = frontier.popleft()
+        state = node.state
+
+        if maze.goal(state.keys) is True:
+            # print("Result:", node.steps, node.state.keys)
+            return node
+
+        for s in maze.successors(state):
+            new_key = {k for k, v in maze.keys.items() if v == s}
+            new_state = SearchState(s, tuple(set(state.keys) | new_key))
+            if new_state not in visited:
+                visited.add(new_state)
+                frontier.append(Node(new_state, node, node.steps + 1))
+
+
+def display_if_path(m, s):
+    if s is None:
+        print("Failed")
+    else:
+        path = []
+        parent = s
         while parent:
-            total += parent.steps
+            path.append(parent.state.pos)
             parent = parent.parent
-        return total
+        m.display(path=path)
 
-
-class Vault:
-    def __init__(self, instructions):
-        self.keys = dict()
-        self.current_pos = tuple()
-        self.map: List[List[str]] = [list(line) for line in instructions]
-
-        self._init_object_data()
-
-    def _init_object_data(self):
-        row_length = len(self.map)
-        col_length = len(self.map[0])
-        for r in range(row_length):
-            for c in range(col_length):
-                icon = self.map[r][c]
-                if icon.isalpha() and icon.islower():
-                    self.keys[icon] = r, c
-                elif icon == "@":
-                    self.current_pos = r, c
-
-    def goal(self, keys):
-        return len(self.keys) == len(keys)
-
-    def get_neighbors(self, state) -> List:
-        neighbors = []
-        r, c = state
-        # check all four directions
-        for (r1, c1) in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            row = r + r1
-            col = c + c1
-            if 0 <= row < len(self.map) and 0 <= col < len(self.map[0]):
-                icon: str = self.map[row][col]
-                if icon == "#" or ("A" <= icon < "Z" and icon.lower() in self.keys):
-                    pass
-                else:
-                    neighbors.append((row, col))
-        return neighbors
-
-    def distance_to_next_keys(self):
-
-        results = dict()
-        for key, key_pos in self.keys.items():
-            frontier = [Node(self.current_pos, None, steps=0)]
-            visited = set()
-
-            while frontier:
-                node = frontier.pop()
-                state = node.state
-                if state == key_pos:
-                    results[key] = node
-                    break
-
-                for neighbor in self.get_neighbors(state):
-                    if neighbor not in visited:
-                        visited.add(neighbor)
-                        frontier.append(Node(neighbor, node, steps=node.steps + 1))
-
-        return results
-
-
-def get_options(node: Node):
-    r = node.state.distance_to_next_keys()
-    return [(k, v.state, v.steps, node) for k, v in r.items()]
-
-
-def run():
-    lines = helpers.get_lines(r"./data/day_18.txt")
-    result = get_shortest_steps_to_all_keys(Vault(lines))
-    print("Part01:", result)
 
 
 def tests():
@@ -114,18 +118,7 @@ def tests():
 #...............b.C.D.f#
 #.######################
 #.....@.a.B.c.d.A.e.F.g#
-########################""".split(
-        "\n"
-    )
-    t4 = """########################
-#@..............ac.GI.b#
-###d#e#f################
-###A#B#C################
-###g#h#i################
-########################""".split(
-        "\n"
-    )
-
+########################""".split("\n")
     t5 = """#################
 #i.G..c...e..H.p#
 ########.########
@@ -137,68 +130,44 @@ def tests():
 #################""".split(
         "\n"
     )
+    t4 = """########################
+#@..............ac.GI.b#
+###d#e#f################
+###A#B#C################
+###g#h#i################
+########################""".split(
+        "\n"
+    )
 
-    r1 = get_shortest_steps_to_all_keys(Vault(t1))
-    assert r1 == 8
+    m = Maze.load_object_data(t1)
+    r = bfs(m)
+    assert r.steps == 8
+    m = Maze.load_object_data(t2)
+    m.display()
+    r = bfs(m)
+    assert r.steps == 86
 
-    r2 = get_shortest_steps_to_all_keys(Vault(t2))
-    assert r2 == 86
+    m = Maze.load_object_data(t4)
+    r = bfs(m)
+    assert r.steps == 81
 
-    r3 = get_shortest_steps_to_all_keys(Vault(t3))
-    assert r3 == 132
+    m = Maze.load_object_data(t5)
+    r = bfs(m)
+    assert r.steps == 136
 
-    r4 = get_shortest_steps_to_all_keys(Vault(t4))
-    assert r4 == 81
-
-    r5 = get_shortest_steps_to_all_keys(Vault(t5))
-    assert r5 == 136
+    m = Maze.load_object_data(t3)
+    r = bfs(m)
+    assert r.steps == 132
 
 
-def get_shortest_steps_to_all_keys(v):
-    high_value = 5902
-    visited = set()
-    new_node = Node(state=v, parent=None, steps=0)
-
-    options = deque(get_options(new_node))
-    while options:
-        # options = deque(sorted(options, key=lambda x: x[2]))
-        if len(options) % 5_000 == 0:
-            print('frontier:', len(options))
-            print('visited:', len(visited))
-
-        # Original Vault returned
-        key, pos, steps, node = options.popleft()
-
-        temp = copy.deepcopy(node.state)
-        temp.keys.pop(key)
-        temp.current_pos = pos
-
-        new_node = Node(state=temp, parent=node, steps=steps)
-        new_total = new_node.get_total()
-
-        if not temp.keys:
-            if new_total < high_value:
-                print("Value lowered to:", new_total)
-                high_value = new_total
-
-        if new_total < high_value:
-            o = get_options(new_node)
-            for key, pos, steps, node in o:
-                new_keys = tuple(sorted([k for k in node.state.keys if k != key]))
-                if (key, pos, steps, new_keys, new_node.get_total()) in visited:
-                    continue
-                else:
-                    visited.add((key, pos, steps, new_keys, new_node.get_total()))
-                    options.append((key, pos, steps, node))
-
-    print("Result:", high_value)
-    return high_value
+def run():
+    # part01
+    instructions = helpers.get_lines(r"./data/day_18.txt")
+    m = Maze.load_object_data(instructions)
+    r = bfs(m)
+    assert r.steps == 5402
 
 
 if __name__ == "__main__":
-
-    print("Tests starting...")
     tests()
-    print("Tests completed!")
-
     run()
