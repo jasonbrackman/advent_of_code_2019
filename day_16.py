@@ -30,7 +30,9 @@ class FFT:
         for iteration in range(1, len(signal) + 1):
             repeat_count = pattern_count * iteration
             repeat = [next(gen) for _ in range(repeat_count)]
-            total = sum(s * repeat[(index + 1) % repeat_count] for index, s in enumerate(signal))
+            total = sum(
+                s * repeat[(index + 1) % repeat_count] for index, s in enumerate(signal)
+            )
             results.append(self.get_digit(total, 0))
 
         return results
@@ -59,11 +61,12 @@ def tests():
     i = 303673
     for _ in range(100):
         signal = f.repeat_phrase(signal)
-        print(signal[i:i + 8])
+        print(signal[i : i + 8])
     #
     # i = 303673
     # print(signal[i:i+8])
     # print(signal)
+
 
 def run():
     # prep data
@@ -90,5 +93,6 @@ def run():
 if __name__ == "__main__":
     tests()
     import cProfile
+
     cProfile.run("run()")
     # run()

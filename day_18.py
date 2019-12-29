@@ -1,7 +1,7 @@
 from __future__ import annotations
 import helpers
 from collections import deque, namedtuple
-from typing import NamedTuple, Optional, List, TypeVar
+from typing import NamedTuple, Optional, List, TypeVar, Callable, Tuple
 from dataclasses import dataclass
 
 
@@ -12,7 +12,7 @@ class Pos(NamedTuple):
 
 class Maze:
     @classmethod
-    def load_object_data(cls, instructions):
+    def load_object_data(cls, instructions, part2=False):
         cls.maze: List[List[str]] = [list(line) for line in instructions]
         cls.rows = len(cls.maze)
         cls.cols = len(cls.maze[0])
@@ -26,7 +26,29 @@ class Maze:
                 elif icon == "@":
                     cls.current_pos = Pos(r, c)
 
+        if part2 is True:
+            # reshape data
+            new = list("@#@###@#@")
+            pos = cls.current_pos
+            rows = [pos.row-1, pos.row, pos.row+1]
+            cols = [pos.col-1, pos.col, pos.col+1]
+            index = 0
+            for r in rows:
+                for c in cols:
+                    icon = new[index]
+                    cls.maze[r][c] = icon
+                    index += 1
+
         return cls()
+
+    def get_start_positions(self):
+        positions = []
+        for row in range(self.rows):
+            for col in range(self.cols):
+                icon = self.maze[row][col]
+                if icon == '@':
+                    positions.append(Pos(row, col))
+        return positions
 
     def display(self, path=None):
         # Header:
@@ -38,7 +60,7 @@ class Maze:
             print(f"{row:02}", end="  ")
             for col in range(self.cols):
                 icon = "X" if path and Pos(row, col) in path else self.maze[row][col]
-                icon = ' ' if icon == '.' else icon
+                icon = " " if icon == "." else icon
                 print(icon, end="")
             print()
 
@@ -52,7 +74,9 @@ class Maze:
             col = state.pos.col + c
             if 0 <= row < self.rows and 0 <= col < self.cols:
                 icon = self.maze[row][col]
-                if icon == "#" or (icon.isalpha() and icon.isupper() and icon.lower() not in state.keys):
+                if icon == "#" or (
+                    icon.isalpha() and icon.isupper() and icon.lower() not in state.keys
+                ):
                     continue
                 neighbors.append(Pos(row, col))
 
@@ -72,15 +96,15 @@ class Node:
 SearchState = namedtuple("SearchState", "pos, keys")
 
 
-def bfs(maze):
-    frontier = deque([Node(SearchState(maze.current_pos, tuple()), None, 0)])
+def bfs(maze, start_state, goal: Callable):
+    frontier = deque([Node(SearchState(start_state, tuple()), None, 0)])
     visited = set()
 
     while frontier:
         node = frontier.popleft()
         state = node.state
 
-        if maze.goal(state.keys) is True:
+        if goal(state.keys) is True:
             # print("Result:", node.steps, node.state.keys)
             return node
 
@@ -104,7 +128,6 @@ def display_if_path(m, s):
         m.display(path=path)
 
 
-
 def tests():
     t1 = """#########\n#b.A.@.a#\n#########""".split("\n")
     t2 = """########################
@@ -118,7 +141,9 @@ def tests():
 #...............b.C.D.f#
 #.######################
 #.....@.a.B.c.d.A.e.F.g#
-########################""".split("\n")
+########################""".split(
+        "\n"
+    )
     t5 = """#################
 #i.G..c...e..H.p#
 ########.########
@@ -140,34 +165,83 @@ def tests():
     )
 
     m = Maze.load_object_data(t1)
-    r = bfs(m)
+    r = bfs(m, m.current_pos, goal=m.goal)
     assert r.steps == 8
+
     m = Maze.load_object_data(t2)
-    m.display()
-    r = bfs(m)
+    r = bfs(m, m.current_pos, goal=m.goal)
     assert r.steps == 86
 
     m = Maze.load_object_data(t4)
-    r = bfs(m)
+    r = bfs(m, m.current_pos, goal=m.goal)
     assert r.steps == 81
 
     m = Maze.load_object_data(t5)
-    r = bfs(m)
+    r = bfs(m, m.current_pos, goal=m.goal)
     assert r.steps == 136
 
     m = Maze.load_object_data(t3)
-    r = bfs(m)
+    r = bfs(m, m.current_pos, goal=m.goal)
     assert r.steps == 132
+    print("Tests complete.")
 
 
 def run():
     # part01
     instructions = helpers.get_lines(r"./data/day_18.txt")
     m = Maze.load_object_data(instructions)
-    r = bfs(m)
+    r = bfs(m, m.current_pos, goal=m.goal)
     assert r.steps == 5402
 
 
+def tests2():
+    t1 = """#######
+#a.#Cd#
+##...##
+##.@.##
+##...##
+#cB#Ab#
+#######""".split('\n')
+
+    def goal(t: Tuple[str]):
+        def g(keys):
+            for key in keys:
+                if key not in t:
+                    return True
+            return False
+        return g
+
+    k = set()
+    m = Maze.load_object_data(t1, part2=True)
+    print(m.display())
+    g = goal(tuple(k))
+    total = 0
+
+    counter = 0
+    positions = m.get_start_positions()
+    while positions:
+        pos = positions[counter % len(positions)]
+        r = bfs(m, pos, goal=g)
+        if r is not None:
+            total += r.steps
+            for item in r.state.keys:
+                k.add(item)
+            g = goal(tuple(k))
+            print(r.state.pos, k)
+            # positions[counter % len(positions)] = r.state.pos
+        counter += 1
+
+    print("Total:", total)
+
+
 if __name__ == "__main__":
-    tests()
-    run()
+    # tests()
+    # run()
+    tests2()
+
+    # instructions = helpers.get_lines(r"./data/day_18.txt")
+    # m = Maze.load_object_data(instructions, part2=True)
+    # m.display()
+    # print(m.current_pos)
+
+    # m = Maze(instructions, part2=True)
