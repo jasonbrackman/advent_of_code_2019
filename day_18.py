@@ -30,8 +30,8 @@ class Maze:
             # reshape data
             new = list("@#@###@#@")
             pos = cls.current_pos
-            rows = [pos.row-1, pos.row, pos.row+1]
-            cols = [pos.col-1, pos.col, pos.col+1]
+            rows = [pos.row - 1, pos.row, pos.row + 1]
+            cols = [pos.col - 1, pos.col, pos.col + 1]
             index = 0
             for r in rows:
                 for c in cols:
@@ -46,7 +46,7 @@ class Maze:
         for row in range(self.rows):
             for col in range(self.cols):
                 icon = self.maze[row][col]
-                if icon == '@':
+                if icon == "@":
                     positions.append(Pos(row, col))
         return positions
 
@@ -201,7 +201,9 @@ def tests2():
 ##.@.##
 ##...##
 #cB#Ab#
-#######""".split('\n')
+#######""".split(
+        "\n"
+    )
 
     def goal(t: Tuple[str]):
         def g(keys):
@@ -209,6 +211,7 @@ def tests2():
                 if key not in t:
                     return True
             return False
+
         return g
 
     k = set()
