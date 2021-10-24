@@ -6,7 +6,6 @@ from day_09 import IntCodeMachine, parse_instructions
 import helpers
 from typing import List, Tuple
 from ast import literal_eval
-from copy import deepcopy
 
 
 class Maze:

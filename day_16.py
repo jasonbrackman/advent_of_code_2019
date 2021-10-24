@@ -38,6 +38,24 @@ class FFT:
         return results
 
 
+def mutate(data, offset=7):
+    """This works only if the message_offset is in the last half of the data."""
+    message_offset = int(''.join(str(x) for x in data[0:offset]))
+    assert message_offset > len(data) / 2
+
+    data1 = data[message_offset:]
+    for _ in range(100):
+
+        t = sum(data1)
+
+        for i in range(len(data1)):
+            old = data1[i]
+            data1[i] = t % 10
+            t -= old
+
+    return int(''.join(str(i) for i in data1[:8]))
+
+
 def tests():
     signal = [int(i) for i in list("12345678")]
     f = FFT()
@@ -79,20 +97,17 @@ def run():
     # part 01
     for _ in range(100):
         signal = f.repeat_phrase(signal)
+
     assert "".join((str(c) for c in signal[0:8])) == "67481260"
 
     # part 02
-    # for _ in range(100):
-    #     signal = f.repeat_phrase(signal, override=9_999)
-    # part02 = int("".join((str(c) for c in signal[0:8])))
-    # print(part02)
-    # result = signal[part02: part02 + 8]
+    signal = [int(i) for i in lines[0]]
+    result = mutate(signal[:] * 10_000, offset=7)
+    assert result == 42178738
     # print("PART02:", result)
 
 
 if __name__ == "__main__":
-    tests()
     import cProfile
-
     cProfile.run("run()")
     # run()

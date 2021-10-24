@@ -201,12 +201,11 @@ def tests():
 
 
 def run():
-    global part_02
     data = helpers.get_lines(r"./data/day_10.txt")
     results = part_01(data)
     assert results == ((19, 14), 274)
-    part_02 = part_02(data, results[0])
-    part_02_200th = part_02[200 - 1]
+    part_02_ = part_02(data, results[0])
+    part_02_200th = part_02_[200 - 1]
     part_02_result = part_02_200th[0] * 100 + part_02_200th[1]
     assert part_02_result == 305
 

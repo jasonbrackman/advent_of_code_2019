@@ -9,7 +9,6 @@ import helpers
 
 pattern = re.compile(r"^.*=(-?\d+).*=(-?\d+).*=(-?\d+).*")
 
-
 @dataclass
 class Vec:
     x: int
