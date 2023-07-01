@@ -20,6 +20,7 @@ import day_19
 import day_20
 import day_24
 import day_24_02
+import day_25
 from helpers import time_it_all
 
 
@@ -47,6 +48,7 @@ def main():
         day_20.run,
         day_24.run,
         day_24_02.run,
+        day_25.run,
     ]
     time_it_all(codez)
 

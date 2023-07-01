@@ -53,6 +53,24 @@ class IntCodeMachine:
         # Telemetry to help optimization
         self.telemetry = {i: 0 for i, _ in enumerate(self.memory)}
 
+    def save(self):
+        with open("day_25.save", 'w', encoding='utf-8') as file:
+            file.write(str(self.pointer) + '\n')
+            file.write(str(self.relative_base) + '\n')
+            file.write(str(self.memory) + '\n')
+            file.write(str(self.silent) + '\n')
+
+    def load(self, path: str) -> None:
+        with open(path, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+
+        self.pointer = int(lines[0])
+        self.relative_base = int(lines[1])
+        self.memory = eval(lines[2])
+        self.silent = lines[3].startswith("True")
+
+
+
     def memory_write(self, position, val):
         while len(self.memory) < position + 1:
             self.memory.append(0)
