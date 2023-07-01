@@ -18,6 +18,7 @@ import day_17
 import day_18
 import day_19
 import day_20
+import day_23
 import day_24
 import day_24_02
 import day_25
@@ -46,6 +47,7 @@ def main():
         day_18.run,
         day_19.run,
         day_20.run,
+        day_23.run,
         day_24.run,
         day_24_02.run,
         day_25.run,
