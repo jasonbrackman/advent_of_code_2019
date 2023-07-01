@@ -1,43 +1,24 @@
 import itertools
 import os
+import re
 from random import choices
 from typing import List, Dict
-import re
 
 from day_09 import IntCodeMachine, parse_instructions
 
+ShipData = Dict[str, List[str]]
 
-def add_input(m: IntCodeMachine, input: str) -> None:
-    for i in input:
+
+def _add_input(m: IntCodeMachine, message: str) -> None:
+    for i in message:
         m.input(ord(i))
     m.input(10)
 
 
-def loadspin() -> None:
+def load_spin() -> None:
+    bogus_startup_codes = [109, 4789, 21101]
     m = IntCodeMachine(
-        [
-            109,
-            4789,
-            21101,
-            3124,
-            0,
-            1,
-            21102,
-            1,
-            13,
-            0,
-            1105,
-            1,
-            1424,
-            21102,
-            1,
-            166,
-            1,
-            21101,
-            24,
-            0,
-            0,
-        ],
+        bogus_startup_codes,
         silent=True,
     )
     _items = [
@@ -60,24 +41,25 @@ def loadspin() -> None:
                 m.load("day_25.save")
 
             for thing in _things:
-                add_input(m, "drop " + thing)
-            add_input(m, "inv")
-            add_input(m, "north")
+                _add_input(m, "drop " + thing)
+            _add_input(m, "inv")
+            _add_input(m, "north")
 
             try:
 
                 for x in range(101500):
                     m.op_codes()
-                    buffer += chr(m.buffer)
+                    if isinstance(m.buffer, int):
+                        buffer += chr(m.buffer)
 
                     if "Command?" in buffer:
                         buffer = ""
-            except RuntimeError as e:
+            except RuntimeError as _:
                 # Will get hit if we run out of inputs which is expected for this loop to keep trying
                 # all combinations.
                 pass
 
-            except KeyError as e:
+            except KeyError as _:
                 # Natural end to the program...
                 pattern = re.compile(r"\d+")
                 results = re.findall(pattern, buffer)
@@ -91,13 +73,14 @@ def spin(m: IntCodeMachine) -> bool:
     all_items = False
     items = ""
     try:
-        rooms: Dict[str, List[str]] = {}
-        visited: Dict[str, List[str]] = {}
-        descriptions: Dict[str, List[str]] = {}
+        rooms: ShipData = {}
+        visited: ShipData = {}
+        descriptions: ShipData = {}
 
-        for x in range(1_000_500):
+        while True:
             m.op_codes()
-            items += chr(m.buffer)
+            if isinstance(m.buffer, int):
+                items += chr(m.buffer)
 
             if "Command?\n" in items:
                 # print(items)
@@ -145,9 +128,8 @@ def spin(m: IntCodeMachine) -> bool:
                         ]
                         and choice not in visited[title[0]]
                     ):
-                        # print(f">> take: {choice}")
-                        add_input(m, "take " + choice)
-                        add_input(m, "inv")
+                        _add_input(m, "take " + choice)
+                        _add_input(m, "inv")
                         visited[title[0]].append(choice)
 
                 # then attempt a move
@@ -158,15 +140,13 @@ def spin(m: IntCodeMachine) -> bool:
                         and option not in visited[title[0]]
                     ):
                         # print(f">> {option} for {title[0]}")
-                        add_input(m, option)
+                        _add_input(m, option)
                         visited[title[0]].append(option)
                         made_move = True
                         break
-                    # else:
-                    #     print(f"Skip: [{option}] from [{title[0]}] already made.")
 
                 if not made_move:
-                    # print("Visited all possible rooms - let's randomly explore.")
+                    # Visited all possible rooms - let's randomly explore.
                     option = choices(
                         [
                             n
@@ -175,22 +155,24 @@ def spin(m: IntCodeMachine) -> bool:
                         ]
                     )[0]
                     # print(f">> {option}")
-                    add_input(m, option)
+                    _add_input(m, option)
                     visited[title[0]].append(option)
 
                 items = ""
         print("Ran out of loops.. sorry.")
 
-    except RuntimeError as e:
+    except RuntimeError as _:
         # Will get hit if we run out of inputs which is expected for this loop to keep trying
         # all combinations.
         pass
 
-    # pprint_debug_exploration_info(descriptions, rooms, visited)
+    # _pprint_debug_exploration_info(descriptions, rooms, visited)
     return False
 
 
-def pprint_debug_exploration_info(descriptions, rooms, visited):
+def _pprint_debug_exploration_info(
+    descriptions: ShipData, rooms: ShipData, visited: ShipData
+) -> None:
     inventory = []
     for k, v in rooms.items():
         print(k, v)
@@ -213,7 +195,7 @@ def run() -> None:
     instructions = parse_instructions("./data/day_25.txt")
     m = IntCodeMachine(instructions, silent=True)
     spin(m)
-    loadspin()
+    load_spin()
 
 
 if __name__ == "__main__":
